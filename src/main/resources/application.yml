@@ -1,0 +1,7 @@
+server:
+  port: 8080
+
+waveai:
+  api:
+    base-url: https://api.wave.co/v1
+    token: ${WAVEAI_API_TOKEN:your-token-here}
