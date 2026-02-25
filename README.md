@@ -63,15 +63,21 @@ Open http://localhost:8080/waveai/
 
 ### Deploy
 
+**Windows (Command Prompt):**
+```bat
+set WAVEAI_API_TOKEN=your-token-here
+scripts\deploy.bat
+```
+
+**Windows (Git Bash) / macOS / Linux:**
 ```bash
 export WAVEAI_API_TOKEN=your-token-here
 bash scripts/deploy.sh
 ```
 
 Optionally pass a region (default: `us-east-1`):
-
-```bash
-bash scripts/deploy.sh eu-west-1
+```bat
+scripts\deploy.bat eu-west-1
 ```
 
 The script will:
