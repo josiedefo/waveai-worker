@@ -1,17 +1,24 @@
 <template>
   <div class="app">
     <header>
-      <h1>WaveAI Sessions</h1>
-      <p class="subtitle">Session data from WaveAI Note Taking</p>
+      <div class="header-top">
+        <div>
+          <h1>WaveAI Sessions</h1>
+          <p class="subtitle">Session data from WaveAI Note Taking</p>
+        </div>
+        <nav>
+          <RouterLink to="/" class="nav-link">Sessions</RouterLink>
+          <RouterLink to="/folders" class="nav-link">Folders</RouterLink>
+        </nav>
+      </div>
     </header>
     <main>
-      <SessionList />
+      <RouterView />
     </main>
   </div>
 </template>
 
 <script setup>
-import SessionList from './components/SessionList.vue'
 </script>
 
 <style>
@@ -37,6 +44,13 @@ header {
   margin-bottom: 2rem;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
 h1 {
   font-size: 1.8rem;
   color: #1a1a2e;
@@ -45,5 +59,29 @@ h1 {
 .subtitle {
   color: #6b7280;
   margin-top: 0.25rem;
+}
+
+nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: #6b7280;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+  background: #f3f4f6;
+  color: #1a1a2e;
+}
+
+.nav-link.router-link-active {
+  background: #1a1a2e;
+  color: #fff;
 }
 </style>

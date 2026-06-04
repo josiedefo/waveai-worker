@@ -1,8 +1,11 @@
 package com.waveai.worker.controller;
 
+import com.waveai.worker.model.Folder;
 import com.waveai.worker.model.Session;
+import com.waveai.worker.model.SessionDetail;
 import com.waveai.worker.service.WaveAiService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,5 +24,15 @@ public class SessionController {
     @GetMapping("/sessions")
     public List<Session> getSessions() {
         return waveAiService.getSessions();
+    }
+
+    @GetMapping("/sessions/{id}")
+    public SessionDetail getSession(@PathVariable String id) {
+        return waveAiService.getSessionDetail(id);
+    }
+
+    @GetMapping("/folders")
+    public List<Folder> getFolders() {
+        return waveAiService.getFolders();
     }
 }

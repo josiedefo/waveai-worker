@@ -1,5 +1,5 @@
 <template>
-  <div class="card">
+  <RouterLink :to="`/session/${session.id}`" class="card">
     <div class="card-header">
       <h3>{{ session.title || 'Untitled Session' }}</h3>
       <span class="badge" :class="session.type">{{ session.type }}</span>
@@ -9,7 +9,7 @@
       <span v-if="session.durationSeconds">Duration: {{ formatDuration(session.durationSeconds) }}</span>
       <span v-if="session.platform">Platform: {{ session.platform }}</span>
     </div>
-  </div>
+  </RouterLink>
 </template>
 
 <script setup>
@@ -40,15 +40,20 @@ function formatDuration(seconds) {
 
 <style scoped>
 .card {
+  display: block;
   background: #fff;
   border-radius: 8px;
   padding: 1.25rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.15s;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .card-header {
