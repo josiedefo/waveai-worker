@@ -1,6 +1,6 @@
 # WaveAI Worker
 
-A simple web app that fetches and displays session data from the WaveAI Note Taking tool.
+A web app that fetches and displays session data from the WaveAI Note Taking tool. Browse your sessions, view full summaries and speaker details, and organize by folder.
 
 **Tech stack:** Vue 3 + Vite (frontend) | Java 21 + Spring Boot 3.5 (backend)
 
@@ -54,6 +54,20 @@ java -jar target/waveai-worker-0.0.1-SNAPSHOT.jar
 
 Open http://localhost:8080/waveai/
 
+## Features
+
+- **Sessions** — browse all your WaveAI sessions in a card grid
+- **Session detail** — click any session to see date, time, duration, speakers, full summary, and a link to open it in Wave
+- **Folders** — view all your Wave folders with session counts and color labels
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/sessions` | List all sessions |
+| GET | `/api/sessions/{id}` | Full session detail (summary, speakers, language, notes) |
+| GET | `/api/folders` | List all folders |
+
 ## Deploy to AWS Elastic Beanstalk
 
 ### Prerequisites
@@ -101,25 +115,23 @@ bash scripts/deploy.sh
 ## Project Structure
 
 ```
-├── Procfile                         # Tells Elastic Beanstalk how to run the app
-├── .ebextensions/app.config         # EB health check path config
-├── scripts/deploy.sh                # AWS deploy script (uses AWS CLI)
-├── src/assembly/eb.xml              # Maven assembly: packages JAR + Procfile into deploy ZIP
-├── pom.xml                          # Maven build
+├── Procfile                          # Tells Elastic Beanstalk how to run the app
+├── .ebextensions/app.config          # EB health check path config
+├── scripts/deploy.sh                 # AWS deploy script (uses AWS CLI)
+├── src/assembly/eb.xml               # Maven assembly: packages JAR + Procfile into deploy ZIP
+├── pom.xml                           # Maven build
 ├── src/main/java/com/waveai/worker/
-│   ├── WaveaiWorkerApplication.java # Entry point
-│   ├── config/RestClientConfig.java # RestClient + CORS
-│   ├── controller/SessionController.java # GET /api/sessions
-│   ├── model/Session.java           # Session DTO
-│   └── service/WaveAiService.java   # WaveAI API client
+│   ├── config/RestClientConfig.java  # RestClient + CORS
+│   ├── controller/SessionController.java
+│   ├── model/                        # Session, SessionDetail, Folder DTOs
+│   └── service/WaveAiService.java    # WaveAI API client
 ├── src/main/resources/
-│   └── application.yml              # Configuration (port, context path, API URL)
+│   └── application.yml               # Port, context path, API URL
 └── frontend/
     ├── src/
-    │   ├── App.vue                  # Root component
-    │   ├── api/sessions.js          # Axios client
-    │   └── components/
-    │       ├── SessionList.vue      # Session grid
-    │       └── SessionCard.vue      # Session card
-    └── vite.config.js               # Vite config (base path, proxy, build output)
+    │   ├── api/                      # Axios clients (sessions.js, folders.js)
+    │   ├── components/               # SessionList, SessionCard
+    │   ├── views/                    # SessionDetail, FolderList
+    │   └── router/                   # Vue Router
+    └── vite.config.js                # Base path, dev proxy, build output
 ```
