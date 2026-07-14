@@ -1,10 +1,10 @@
 package com.waveai.worker.entity.converter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public class StringListJsonConverter implements AttributeConverter<List<String>,
         if (attribute == null) return "[]";
         try {
             return MAPPER.writeValueAsString(attribute);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return "[]";
         }
     }
@@ -28,7 +28,7 @@ public class StringListJsonConverter implements AttributeConverter<List<String>,
         if (dbData == null || dbData.isBlank()) return List.of();
         try {
             return MAPPER.readValue(dbData, new TypeReference<>() {});
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return List.of();
         }
     }
