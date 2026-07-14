@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version>
+        <version>4.1.0</version>
         <relativePath/>
     </parent>
 
@@ -38,6 +38,14 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Spring Boot 4 split auto-configuration into per-technology modules;
+             FlywayAutoConfiguration now lives here (it was in spring-boot-autoconfigure
+             in Boot 3.x). Without this, flyway-core is present but migrations never run. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -51,6 +59,24 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers: the context-load integration test provisions its own
+             PostgreSQL so it does not depend on a locally running DB or env vars. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -69,11 +95,11 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.15.1</version>
+                <version>2.0.1</version>
                 <configuration>
                     <workingDirectory>frontend</workingDirectory>
                     <installDirectory>target</installDirectory>
-                    <nodeVersion>v22.13.1</nodeVersion>
+                    <nodeVersion>v24.15.0</nodeVersion>
                 </configuration>
                 <executions>
                     <!-- Node/npm install runs early so it is cached for the npm-build step -->

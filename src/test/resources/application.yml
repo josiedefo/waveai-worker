@@ -7,3 +7,17 @@ waveai:
   api:
     base-url: https://api.wave.co/v1
     token: test-token
+
+# Datasource is NOT configured here on purpose: the @SpringBootTest provisions
+# PostgreSQL via Testcontainers and injects the connection with @ServiceConnection.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+sync:
+  schedule: "0 */15 * * * *"
