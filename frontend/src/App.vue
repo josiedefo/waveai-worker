@@ -19,6 +19,12 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+import { useSse } from './api/sse.js'
+
+onMounted(() => {
+  useSse() // opens the SSE connection once for the lifetime of the app
+})
 </script>
 
 <style>

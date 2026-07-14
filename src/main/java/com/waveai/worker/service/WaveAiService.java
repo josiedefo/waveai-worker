@@ -5,6 +5,8 @@ import com.waveai.worker.model.FoldersResponse;
 import com.waveai.worker.model.Session;
 import com.waveai.worker.model.SessionDetail;
 import com.waveai.worker.model.SessionsResponse;
+import com.waveai.worker.model.TranscriptResponse;
+import com.waveai.worker.model.TranscriptSegment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -49,6 +51,23 @@ public class WaveAiService {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
                     "Failed to fetch session from WaveAI",
+                    e
+            );
+        }
+    }
+
+    public List<TranscriptSegment> getTranscript(String sessionId) {
+        try {
+            TranscriptResponse response = restClient.get()
+                    .uri("/sessions/{id}/transcript", sessionId)
+                    .retrieve()
+                    .body(TranscriptResponse.class);
+            return response != null && response.segments() != null
+                    ? response.segments() : List.of();
+        } catch (RestClientException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Failed to fetch transcript from WaveAI",
                     e
             );
         }

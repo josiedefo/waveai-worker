@@ -14,15 +14,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { fetchSessions } from '../api/sessions.js'
+import { useSse } from '../api/sse.js'
 import SessionCard from './SessionCard.vue'
 
 const sessions = ref([])
 const loading = ref(true)
 const error = ref(null)
 
-onMounted(async () => {
+async function loadSessions() {
   try {
     sessions.value = await fetchSessions()
   } catch (err) {
@@ -31,6 +32,21 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+const { on, off } = useSse()
+
+function onSessionsUpdated() {
+  fetchSessions().then(data => { sessions.value = data }).catch(() => {})
+}
+
+onMounted(() => {
+  loadSessions()
+  on('sessions-updated', onSessionsUpdated)
+})
+
+onUnmounted(() => {
+  off('sessions-updated', onSessionsUpdated)
 })
 </script>
 

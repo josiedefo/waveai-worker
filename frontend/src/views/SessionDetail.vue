@@ -51,6 +51,28 @@
         <p class="notes">{{ session.notes }}</p>
       </div>
 
+      <div v-if="transcript.length" class="section">
+        <h3>Transcript</h3>
+        <div class="transcript">
+          <div
+            v-for="(seg, idx) in transcript"
+            :key="idx"
+            class="segment"
+            :class="{ 'alt-speaker': idx > 0 && seg.speaker !== transcript[idx - 1].speaker }"
+          >
+            <div class="segment-meta">
+              <span class="seg-speaker">{{ seg.speaker || 'Unknown' }}</span>
+              <span class="seg-time">{{ formatSeconds(seg.startSec) }}</span>
+            </div>
+            <p class="seg-text">{{ seg.text }}</p>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="transcriptLoading" class="section">
+        <h3>Transcript</h3>
+        <p class="status-inline">Loading transcript...</p>
+      </div>
+
       <div v-if="session.sessionUrl" class="section">
         <a :href="session.sessionUrl" target="_blank" rel="noopener" class="wave-link">Open in Wave ↗</a>
       </div>
@@ -59,28 +81,62 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchSession } from '../api/sessions.js'
+import { fetchSession, fetchTranscript } from '../api/sessions.js'
+import { useSse } from '../api/sse.js'
 
 const route = useRoute()
 const session = ref(null)
+const transcript = ref([])
 const loading = ref(true)
+const transcriptLoading = ref(true)
 const error = ref(null)
 
+const { on, off } = useSse()
+
+function onDetailUpdated(e) {
+  if (e.data === route.params.id) {
+    fetchSession(route.params.id).then(data => { session.value = data }).catch(() => {})
+  }
+}
+
+function onTranscriptUpdated(e) {
+  if (e.data === route.params.id) {
+    fetchTranscript(route.params.id).then(data => {
+      transcript.value = data
+      transcriptLoading.value = false
+    }).catch(() => {})
+  }
+}
+
 onMounted(async () => {
+  on('session-detail-updated', onDetailUpdated)
+  on('transcript-updated', onTranscriptUpdated)
+
   try {
-    session.value = await fetchSession(route.params.id)
-  } catch {
-    error.value = 'Failed to load session details. Please try again later.'
+    const [sessionData, transcriptData] = await Promise.allSettled([
+      fetchSession(route.params.id),
+      fetchTranscript(route.params.id)
+    ])
+    if (sessionData.status === 'fulfilled') session.value = sessionData.value
+    else error.value = 'Failed to load session details. Please try again later.'
+    if (transcriptData.status === 'fulfilled') {
+      transcript.value = transcriptData.value
+      transcriptLoading.value = false
+    }
   } finally {
     loading.value = false
   }
 })
 
+onUnmounted(() => {
+  off('session-detail-updated', onDetailUpdated)
+  off('transcript-updated', onTranscriptUpdated)
+})
+
 const renderedSummary = computed(() => {
   if (!session.value?.summary) return ''
-  // Convert basic markdown to HTML (headings, bold, line breaks)
   return session.value.summary
     .replace(/^### (.+)$/gm, '<h4>$1</h4>')
     .replace(/^## (.+)$/gm, '<h3>$1</h3>')
@@ -104,6 +160,14 @@ function formatDuration(seconds) {
   const mins = Math.floor((seconds % 3600) / 60)
   if (hrs > 0) return `${hrs}h ${mins}m`
   return `${mins}m`
+}
+
+function formatSeconds(sec) {
+  if (sec == null) return ''
+  const total = Math.floor(sec)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 </script>
 
@@ -130,6 +194,11 @@ function formatDuration(seconds) {
   padding: 3rem;
   color: #6b7280;
   font-size: 1.1rem;
+}
+
+.status-inline {
+  color: #9ca3af;
+  font-size: 0.9rem;
 }
 
 .error {
@@ -250,6 +319,48 @@ function formatDuration(seconds) {
   line-height: 1.7;
   color: #374151;
   white-space: pre-wrap;
+}
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.segment {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.segment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-top: 0.1rem;
+}
+
+.seg-speaker {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.seg-time {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+
+.seg-text {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
 }
 
 .wave-link {

@@ -11,3 +11,7 @@ export function fetchSessions() {
 export function fetchSession(id) {
   return api.get(`/sessions/${id}`).then(res => res.data)
 }
+
+export function fetchTranscript(id) {
+  return api.get(`/sessions/${id}/transcript`).then(res => res.data)
+}

@@ -25,14 +25,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { fetchFolders } from '../api/folders.js'
+import { useSse } from '../api/sse.js'
 
 const folders = ref([])
 const loading = ref(true)
 const error = ref(null)
 
-onMounted(async () => {
+async function loadFolders() {
   try {
     folders.value = await fetchFolders()
   } catch {
@@ -40,6 +41,21 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+const { on, off } = useSse()
+
+function onFoldersUpdated() {
+  fetchFolders().then(data => { folders.value = data }).catch(() => {})
+}
+
+onMounted(() => {
+  loadFolders()
+  on('folders-updated', onFoldersUpdated)
+})
+
+onUnmounted(() => {
+  off('folders-updated', onFoldersUpdated)
 })
 </script>
 
