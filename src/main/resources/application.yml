@@ -9,10 +9,18 @@ waveai:
     token: ${WAVEAI_API_TOKEN:your-token-here}
 
 spring:
+  # Datasource lives in profile-specific files: application-local.yml
+  # (Docker Postgres, the default) and application-neon.yml (Neon).
+  profiles:
+    default: local
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/waveai}
-    username: ${DB_USERNAME:waveai}
-    password: ${DB_PASSWORD:waveai}
+    hikari:
+      # Tuned for serverless Postgres (Neon): computes scale to zero and drop
+      # idle connections, so recycle connections before that bites and allow
+      # time for cold-start wake-up. Harmless against local Docker Postgres.
+      max-lifetime: 300000
+      keepalive-time: 240000
+      connection-timeout: 30000
   jpa:
     hibernate:
       ddl-auto: validate

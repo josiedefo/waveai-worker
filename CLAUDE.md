@@ -29,6 +29,10 @@ set WAVEAI_API_TOKEN=your-token-here
 export WAVEAI_API_TOKEN=your-token-here
 ```
 
+### Database profiles
+- `local` (default, `application-local.yml`) — Docker Postgres on `localhost:5432` (`docker compose up -d`)
+- `neon` (`application-neon.yml`) — Neon Postgres; set `SPRING_PROFILES_ACTIVE=neon` plus `WAVEAI_WORKER_NEON_DATABASE_URL` (JDBC URL, direct non-pooler endpoint), `WAVEAI_WORKER_NEON_DATABASE_USERNAME`, `WAVEAI_WORKER_NEON_DATABASE_PASSWORD`. Vars are app-prefixed so multiple local apps can each point at their own Neon project without collision. SSL is applied by the profile.
+
 ## Architecture
 
 **Stack:** Vue 3 + Vite (frontend) | Java 21 + Spring Boot 3.5 (backend) | Maven build

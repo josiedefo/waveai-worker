@@ -1,0 +1,9 @@
+# Local Docker PostgreSQL Configuration (docker compose up -d)
+# Active by default (spring.profiles.default=local in application.yml)
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/waveai
+    username: waveai
+    password: waveai
+    driver-class-name: org.postgresql.Driver

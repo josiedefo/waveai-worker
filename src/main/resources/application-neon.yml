@@ -1,0 +1,18 @@
+# Neon PostgreSQL Configuration
+# Activate with: -Dspring.profiles.active=neon
+# Or set environment variable: SPRING_PROFILES_ACTIVE=neon
+#
+# Env vars are prefixed WAVEAI_WORKER_ (rather than a generic NEON_DATABASE_*)
+# so this app's Neon credentials don't collide with other apps' on the same
+# machine that each connect to their own Neon project.
+
+spring:
+  datasource:
+    url: ${WAVEAI_WORKER_NEON_DATABASE_URL}
+    username: ${WAVEAI_WORKER_NEON_DATABASE_USERNAME}
+    password: ${WAVEAI_WORKER_NEON_DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Neon requires SSL
+      data-source-properties:
+        sslmode: require
