@@ -48,6 +48,8 @@ The app is a caching viewer for the WaveAI note-taking API. Reads always serve f
 
 **Context path:** Everything runs under `/waveai` — the Spring Boot servlet context path and Vite's `base` are both set to `/waveai/`.
 
+**SPA fallback:** Vue Router uses HTML5 history mode, so `SpaForwardController` forwards the client routes (`/session/{id}`, `/folders`) to `forward:/index.html` for direct loads/refreshes. Routes are listed explicitly — when adding a route in `frontend/src/router`, add it to `SpaForwardController` too. Unknown paths still 404; `/api/**` is untouched.
+
 **Dev proxy:** Vite proxies `/waveai/api` → `http://localhost:8080` so the frontend hits the Spring Boot backend during development without CORS issues (CORS is also configured in `RestClientConfig` for `localhost:5173`).
 
 **Build integration:** `frontend-maven-plugin` runs `npm run build` during Maven's `prepare-package` phase. Vite outputs to `../target/classes/static`, which Spring Boot serves as classpath static resources. The result is a single executable JAR.
@@ -61,7 +63,8 @@ src/main/java/com/waveai/worker/
 │   └── SyncExecutorConfig.java       # Bounded ThreadPoolTaskExecutor for background syncs
 ├── controller/
 │   ├── SessionController.java        # Cached GETs: /api/sessions, /api/sessions/{id}, /api/folders, /api/events (SSE)
-│   └── SyncController.java           # POST /api/sync/{sessions,sessions/{id},folders}, GET /api/sync/status
+│   ├── SyncController.java           # POST /api/sync/{sessions,sessions/{id},folders}, GET /api/sync/status
+│   └── SpaForwardController.java     # SPA deep-link forwards → index.html (keep in sync with frontend/src/router)
 ├── dto/ + mapper/SessionMapper.java  # Entity → DTO for the frontend
 ├── entity/ + repository/             # JPA entities (cachedAt timestamps) + Spring Data repos
 ├── model/                            # Java records: Session, SessionDetail, Folder + response wrappers

@@ -100,6 +100,8 @@ Rate-limit protection is built in:
 
 Need fresh data *now*? The **Sync** button on the Sessions list and Session detail pages triggers an on-demand sync that bypasses the TTL (but still respects the 429 cooldown). Both pages show when the data was last synced, and the button reports rate limiting with a retry countdown instead of failing silently.
 
+Deep links work too: the backend forwards the Vue Router paths (`/session/{id}`, `/folders`) to the SPA entry point, so opening or refreshing those URLs directly loads the app instead of a 404.
+
 ## Features
 
 - **Sessions** — browse all your WaveAI sessions in a card grid
@@ -178,7 +180,8 @@ Same command — the script detects the environment already exists and just upda
     │   └── SyncExecutorConfig.java   # Bounded executor for background syncs
     ├── controller/
     │   ├── SessionController.java    # Cached reads (+ TTL-gated revalidation triggers)
-    │   └── SyncController.java       # On-demand sync endpoints + sync status
+    │   ├── SyncController.java       # On-demand sync endpoints + sync status
+    │   └── SpaForwardController.java # Forwards SPA deep links (/session/{id}, /folders) to index.html
     ├── dto/                          # Response DTOs served to the frontend
     ├── entity/                       # JPA entities + JSONB converter
     ├── mapper/SessionMapper.java     # Entity → DTO mapping
