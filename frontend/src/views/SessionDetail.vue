@@ -1,6 +1,14 @@
 <template>
   <div>
-    <button class="back-btn" @click="$router.back()">← Back</button>
+    <div class="topbar">
+      <button class="back-btn" @click="$router.back()">← Back</button>
+      <div class="topbar-right">
+        <span v-if="syncError" class="sync-error">{{ syncError }}</span>
+        <button class="sync-btn" :disabled="syncing" @click="onSync">
+          {{ syncing ? 'Syncing…' : 'Sync' }}
+        </button>
+      </div>
+    </div>
 
     <div v-if="loading" class="status">Loading session...</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
@@ -31,6 +39,10 @@
         <div v-if="session.language" class="meta-item">
           <span class="label">Language</span>
           <span>{{ session.language }}</span>
+        </div>
+        <div v-if="session.cachedAt" class="meta-item">
+          <span class="label">Last synced</span>
+          <span>{{ formatDate(session.cachedAt) }} {{ formatTime(session.cachedAt) }}</span>
         </div>
       </div>
 
@@ -84,6 +96,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchSession, fetchTranscript } from '../api/sessions.js'
+import { syncSession, syncErrorMessage } from '../api/sync.js'
 import { useSse } from '../api/sse.js'
 
 const route = useRoute()
@@ -92,6 +105,8 @@ const transcript = ref([])
 const loading = ref(true)
 const transcriptLoading = ref(true)
 const error = ref(null)
+const syncing = ref(false)
+const syncError = ref(null)
 
 const { on, off } = useSse()
 
@@ -110,17 +125,18 @@ function onTranscriptUpdated(e) {
   }
 }
 
-onMounted(async () => {
-  on('session-detail-updated', onDetailUpdated)
-  on('transcript-updated', onTranscriptUpdated)
-
+async function loadAll() {
   try {
     const [sessionData, transcriptData] = await Promise.allSettled([
       fetchSession(route.params.id),
       fetchTranscript(route.params.id)
     ])
-    if (sessionData.status === 'fulfilled') session.value = sessionData.value
-    else error.value = 'Failed to load session details. Please try again later.'
+    if (sessionData.status === 'fulfilled') {
+      session.value = sessionData.value
+      error.value = null
+    } else {
+      error.value = 'Failed to load session details. Please try again later.'
+    }
     if (transcriptData.status === 'fulfilled') {
       transcript.value = transcriptData.value
       transcriptLoading.value = false
@@ -128,6 +144,26 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+async function onSync() {
+  if (syncing.value) return
+  syncing.value = true
+  syncError.value = null
+  try {
+    await syncSession(route.params.id)
+    await loadAll()
+  } catch (err) {
+    syncError.value = syncErrorMessage(err)
+  } finally {
+    syncing.value = false
+  }
+}
+
+onMounted(() => {
+  on('session-detail-updated', onDetailUpdated)
+  on('transcript-updated', onTranscriptUpdated)
+  loadAll()
 })
 
 onUnmounted(() => {
@@ -172,6 +208,44 @@ function formatSeconds(sec) {
 </script>
 
 <style scoped>
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sync-error {
+  font-size: 0.85rem;
+  color: #dc2626;
+}
+
+.sync-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.sync-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.sync-btn:disabled {
+  background: #93c5fd;
+  cursor: default;
+}
+
 .back-btn {
   background: none;
   border: none;
@@ -179,7 +253,6 @@ function formatSeconds(sec) {
   font-size: 0.95rem;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 1.5rem;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;

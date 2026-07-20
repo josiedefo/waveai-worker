@@ -55,6 +55,7 @@ class SessionMapperTest {
         detail.setNotes("Some notes");
         detail.setSpeakers(List.of("Alice", "Bob"));
         detail.setSessionUrl("https://wave.co/s/s2");
+        detail.setCachedAt(Instant.parse("2026-01-15T11:00:00Z"));
         entity.setDetail(detail);
 
         SessionDetailDto dto = mapper.toSessionDetailDto(entity);
@@ -65,6 +66,7 @@ class SessionMapperTest {
         assertThat(dto.notes()).isEqualTo("Some notes");
         assertThat(dto.speakers()).containsExactly("Alice", "Bob");
         assertThat(dto.sessionUrl()).isEqualTo("https://wave.co/s/s2");
+        assertThat(dto.cachedAt()).isEqualTo(Instant.parse("2026-01-15T11:00:00Z"));
     }
 
     @Test

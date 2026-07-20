@@ -39,7 +39,8 @@ public class SessionMapper {
             d != null ? d.getSummary() : null,
             d != null ? d.getNotes() : null,
             d != null ? d.getSpeakers() : List.of(),
-            d != null ? d.getSessionUrl() : null
+            d != null ? d.getSessionUrl() : null,
+            d != null ? d.getCachedAt() : null
         );
     }
 

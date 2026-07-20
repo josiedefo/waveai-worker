@@ -30,4 +30,9 @@ spring:
     locations: classpath:db/migration
 
 sync:
-  schedule: "0 */15 * * * *"
+  schedule: "0 0 * * * *"   # hourly; TTL-gated so usually a no-op
+  rate-limit-cooldown: 60s  # pause after a 429 when Retry-After is absent/shorter
+  ttl:
+    sessions: 5m
+    folders: 15m
+    detail: 30m

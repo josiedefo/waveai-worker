@@ -15,5 +15,6 @@ public record SessionDetailDto(
     String summary,
     String notes,
     List<String> speakers,
-    @JsonProperty("sessionUrl") String sessionUrl
+    @JsonProperty("sessionUrl") String sessionUrl,
+    @JsonProperty("cachedAt") Instant cachedAt
 ) {}

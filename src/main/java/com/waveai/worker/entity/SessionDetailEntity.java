@@ -2,6 +2,7 @@ package com.waveai.worker.entity;
 
 import com.waveai.worker.entity.converter.StringListJsonConverter;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnTransformer;
 import java.time.Instant;
 import java.util.List;
 
@@ -27,6 +28,9 @@ public class SessionDetailEntity {
 
     @Convert(converter = StringListJsonConverter.class)
     @Column(columnDefinition = "JSONB")
+    // The converter binds a varchar parameter; Postgres refuses varchar → jsonb
+    // without an explicit cast.
+    @ColumnTransformer(write = "?::jsonb")
     private List<String> speakers;
 
     private String sessionUrl;

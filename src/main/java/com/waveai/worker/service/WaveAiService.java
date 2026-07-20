@@ -7,12 +7,15 @@ import com.waveai.worker.model.SessionDetail;
 import com.waveai.worker.model.SessionsResponse;
 import com.waveai.worker.model.TranscriptResponse;
 import com.waveai.worker.model.TranscriptSegment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -32,6 +35,8 @@ public class WaveAiService {
                     .body(FoldersResponse.class);
             return response != null && response.folders() != null
                     ? response.folders() : List.of();
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new RateLimitedException(parseRetryAfter(e.getResponseHeaders()), e);
         } catch (RestClientException e) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -47,6 +52,8 @@ public class WaveAiService {
                     .uri("/sessions/{id}", id)
                     .retrieve()
                     .body(SessionDetail.class);
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new RateLimitedException(parseRetryAfter(e.getResponseHeaders()), e);
         } catch (RestClientException e) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -64,6 +71,8 @@ public class WaveAiService {
                     .body(TranscriptResponse.class);
             return response != null && response.segments() != null
                     ? response.segments() : List.of();
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new RateLimitedException(parseRetryAfter(e.getResponseHeaders()), e);
         } catch (RestClientException e) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -81,12 +90,25 @@ public class WaveAiService {
                     .body(SessionsResponse.class);
             return response != null && response.sessions() != null
                     ? response.sessions() : List.of();
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new RateLimitedException(parseRetryAfter(e.getResponseHeaders()), e);
         } catch (RestClientException e) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
                     "Failed to fetch sessions from WaveAI",
                     e
             );
+        }
+    }
+
+    private static Duration parseRetryAfter(HttpHeaders headers) {
+        if (headers == null) return null;
+        String value = headers.getFirst(HttpHeaders.RETRY_AFTER);
+        if (value == null) return null;
+        try {
+            return Duration.ofSeconds(Long.parseLong(value.trim()));
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }

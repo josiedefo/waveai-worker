@@ -20,4 +20,9 @@ spring:
     locations: classpath:db/migration
 
 sync:
-  schedule: "0 */15 * * * *"
+  schedule: "0 0 * * * *"
+  rate-limit-cooldown: 60s
+  ttl:
+    sessions: 5m
+    folders: 15m
+    detail: 30m
