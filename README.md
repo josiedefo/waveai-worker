@@ -2,7 +2,7 @@
 
 A web app that fetches and displays session data from the WaveAI Note Taking tool. Browse your sessions, view full summaries, transcripts, and speaker details, and organize by folder.
 
-**Tech stack:** Vue 3 + Vite (frontend) | Java 21 + Spring Boot 3.5 (backend) | PostgreSQL (cache)
+**Tech stack:** Vue 3 + Vite (frontend) | Java 21 + Spring Boot 4 (backend) | PostgreSQL (cache)
 
 ## Prerequisites
 
@@ -89,9 +89,16 @@ Same profile system as local development (see [Setup](#setup)): defaults to the 
 
 ## How it works
 
-On page load the app immediately serves cached data from PostgreSQL, then silently fetches fresh data from the WaveAI API in the background. When the sync completes, the UI updates automatically via Server-Sent Events — no page refresh needed.
+Every page load serves cached data from PostgreSQL immediately. A background revalidation against the WaveAI API only fires when the cache is actually stale — each resource has a TTL (sessions 5 min, folders 15 min, session detail 30 min, configurable under `sync:` in `application.yml`). When a sync completes, the UI updates automatically via Server-Sent Events — no page refresh needed.
 
-The background sync also runs on a schedule every 15 minutes.
+Rate-limit protection is built in:
+
+- **TTL gate** — fresh cache means zero upstream calls, no matter how often pages are loaded
+- **429 cooldown** — if WaveAI returns 429, all syncing (background and manual) pauses globally, honoring the `Retry-After` header
+- **Dedupe** — concurrent requests for the same resource collapse into a single upstream call
+- **Hourly scheduled sync** — routed through the same gates, so it's a no-op while the cache is fresh
+
+Need fresh data *now*? The **Sync** button on the Sessions list and Session detail pages triggers an on-demand sync that bypasses the TTL (but still respects the 429 cooldown). Both pages show when the data was last synced, and the button reports rate limiting with a retry countdown instead of failing silently.
 
 ## Features
 
@@ -99,6 +106,7 @@ The background sync also runs on a schedule every 15 minutes.
 - **Session detail** — click any session to see date, time, duration, speakers, full summary, and a link to open it in Wave
 - **Transcript** — speaker-attributed transcript displayed on the session detail page
 - **Folders** — view all your Wave folders with session counts and color labels
+- **On-demand sync** — Sync buttons with last-synced timestamps on the list and detail pages; friendly feedback when WaveAI rate limits
 
 ## API Endpoints
 
@@ -109,6 +117,12 @@ The background sync also runs on a schedule every 15 minutes.
 | GET | `/api/sessions/{id}/transcript` | Speaker-attributed transcript segments |
 | GET | `/api/folders` | List all folders |
 | GET | `/api/events` | SSE stream for cache-update notifications |
+| POST | `/api/sync/sessions` | Sync the session list now (bypasses TTL) |
+| POST | `/api/sync/sessions/{id}` | Sync one session's detail + transcript now |
+| POST | `/api/sync/folders` | Sync folders now |
+| GET | `/api/sync/status` | Last-synced timestamps + rate-limit state |
+
+Sync endpoints return `202 {"status":"in-progress"}` if that resource is already syncing, and `429` with a `Retry-After` header while the WaveAI rate-limit cooldown is active.
 
 ## Deploy to AWS Elastic Beanstalk
 
@@ -158,16 +172,23 @@ Same command — the script detects the environment already exists and just upda
 │   ├── application-neon.yml          # neon profile: Neon Postgres via WAVEAI_WORKER_NEON_DATABASE_* env vars
 │   └── db/migration/                 # Flyway SQL migrations
 └── src/main/java/com/waveai/worker/
-    ├── config/RestClientConfig.java  # RestClient + CORS
-    ├── controller/SessionController.java
+    ├── config/
+    │   ├── RestClientConfig.java     # RestClient + CORS
+    │   ├── SyncProperties.java       # sync.* config binding (TTLs, cooldown, schedule)
+    │   └── SyncExecutorConfig.java   # Bounded executor for background syncs
+    ├── controller/
+    │   ├── SessionController.java    # Cached reads (+ TTL-gated revalidation triggers)
+    │   └── SyncController.java       # On-demand sync endpoints + sync status
     ├── dto/                          # Response DTOs served to the frontend
     ├── entity/                       # JPA entities + JSONB converter
     ├── mapper/SessionMapper.java     # Entity → DTO mapping
     ├── model/                        # WaveAI API response records
     ├── repository/                   # Spring Data JPA repositories
     ├── service/
-    │   ├── WaveAiService.java        # WaveAI API client
-    │   └── CacheSyncService.java     # Background sync + scheduled refresh
+    │   ├── WaveAiService.java        # WaveAI API client (maps 429 → RateLimitedException)
+    │   ├── CacheSyncService.java     # TTL-gated background sync, dedupe, manual sync, hourly schedule
+    │   ├── UpstreamRateLimiter.java  # Global 429 cooldown (honors Retry-After)
+    │   └── RateLimitedException.java
     └── sse/SseEmitterRegistry.java   # SSE connection registry
 ```
 
@@ -176,6 +197,7 @@ frontend/src/
 ├── api/
 │   ├── sessions.js   # fetchSessions, fetchSession, fetchTranscript
 │   ├── folders.js    # fetchFolders
+│   ├── sync.js       # syncSessions, syncSession, syncFolders, fetchSyncStatus
 │   └── sse.js        # Singleton SSE client
 ├── components/       # SessionList, SessionCard
 ├── views/            # SessionDetail, FolderList
